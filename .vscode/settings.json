@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "windows.h": "c",
+        "stdio.h": "c",
+        "time.h": "c",
+        "xiosbase": "c",
+        "format": "c",
+        "initializer_list": "c",
+        "vector": "c",
+        "xstring": "c",
+        "xutility": "c"
+    }
+}
