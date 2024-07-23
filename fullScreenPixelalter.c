@@ -3,7 +3,8 @@
 HWND window = NULL;
 HDC screen, capture;
 HBITMAP bits;
-int pixelSize = 1;
+int pixelSize = 5;
+int mode = 1;
 
 void setTransparent()
 {
@@ -12,7 +13,6 @@ void setTransparent()
     wl = wl | WS_EX_LAYERED | WS_EX_TRANSPARENT;
     SetWindowLong(window, GWL_EXSTYLE, wl);
 }
-
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -30,6 +30,37 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         BitBlt(capture, 0, 0, 1920, 1080, screen, 0, 0, SRCCOPY);
         // Apply pixelation effect by scaling down and then up
         // Adjust pixel size as needed
+        switch (mode)
+        {
+        case (1):
+        {
+            SetStretchBltMode(capture, BLACKONWHITE);
+            SetStretchBltMode(GetDC(window), BLACKONWHITE);
+            break;
+        }
+        case (2):
+        {
+            SetStretchBltMode(capture, COLORONCOLOR);
+            SetStretchBltMode(GetDC(window), COLORONCOLOR);
+            break;
+        }
+        case (3):
+        {
+            SetStretchBltMode(capture, HALFTONE);
+            SetStretchBltMode(GetDC(window), HALFTONE);
+            break;
+        }
+
+        case (4):
+        {
+            SetStretchBltMode(capture, WHITEONBLACK);
+            SetStretchBltMode(GetDC(window), WHITEONBLACK);
+            break;
+        }
+
+        default:
+            break;
+        }
         StretchBlt(capture, 0, 0, 1920 / pixelSize, 1080 / pixelSize, capture, 0, 0, 1920, 1080, SRCCOPY);
         StretchBlt(GetDC(window), 0, 0, 1920, 1080, capture, 0, 0, 1920 / pixelSize, 1080 / pixelSize, SRCCOPY);
         DeleteObject(bits);
@@ -41,22 +72,39 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
     case WM_KEYDOWN:
     {
-        if (wParam == VK_UP)
+        switch (wParam)
         {
-
+        case VK_UP:
             pixelSize++;
-            return 0;
-        }
+            break;
 
-        if (wParam == VK_DOWN)
-        {
-
+        case VK_DOWN:
             if (pixelSize > 1)
             {
                 pixelSize--;
             }
-            return 0;
+            break;
+
+        case 0x31:
+            mode = 1;
+            break;
+
+        case 0x32:
+            mode = 2;
+            break;
+
+        case 0x33:
+            mode = 3;
+            break;
+
+        case 0x34:
+            mode = 4;
+            break;
+
+        default:
+            break;
         }
+
         return 0;
     }
     case WM_DESTROY:
@@ -99,8 +147,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         MessageBox(NULL, "Window Creation Failed!", "Error", MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
-
-
 
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0))
