@@ -12,6 +12,55 @@ HDC screen, capture;
 HDC mainWin;
 HBITMAP bits;
 
+LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+    char pressedKey;
+    // Declare a pointer to the KBDLLHOOKSTRUCTdsad
+    KBDLLHOOKSTRUCT *pKeyBoard = (KBDLLHOOKSTRUCT *)lParam;
+    switch (wParam)
+    {
+    case WM_KEYDOWN:
+        // Check for specific keys
+        switch (pKeyBoard->vkCode)
+        {
+        case 0x31:
+            mode = 1;
+            break;
+        case 0x32:
+            mode = 2;
+            break;
+        case 0x33:
+            mode = 3;
+            break;
+        case 0x34:
+            mode = 4;
+            break;
+        case VK_UP:
+            pixelSize++;
+            scaledWidth = width / pixelSize;
+            scaledHeight = height / pixelSize;
+
+            break;
+        case VK_DOWN:
+            if (pixelSize > 1)
+            {
+                pixelSize--;
+                scaledWidth = width / pixelSize;
+                scaledHeight = height / pixelSize;
+            }
+            break;
+        }
+        break;
+        break;
+    default:
+        return CallNextHookEx(NULL, nCode, wParam, lParam);
+        break;
+    }
+
+    // according to winapi all functions which implement a hook must return by calling next hook
+    return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
+
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
@@ -45,49 +94,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         return 0;
     }
 
-    case WM_KEYDOWN:
-    {
-        switch (wParam)
-        {
-        case VK_UP:
-            pixelSize++;
-            scaledWidth = width / pixelSize;
-            scaledHeight = height / pixelSize;
-
-            break;
-
-        case VK_DOWN:
-            if (pixelSize > 1)
-            {
-                pixelSize--;
-                scaledWidth = width / pixelSize;
-                scaledHeight = height / pixelSize;
-            }
-            break;
-
-        case 0x31:
-            mode = 1;
-            break;
-
-        case 0x32:
-            mode = 2;
-            break;
-
-        case 0x33:
-            mode = 3;
-            break;
-
-        case 0x34:
-            mode = 4;
-            break;
-
-        default:
-            break;
-        }
-
-        return 0;
-    }
-
     case WM_DESTROY:
         ReleaseDC(window, screen);
         PostQuitMessage(0);
@@ -99,7 +105,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-
+    HHOOK test1 = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, 0);
     scaledWidth = width / pixelSize;
     scaledHeight = height / pixelSize;
     screen = GetDC(NULL);
