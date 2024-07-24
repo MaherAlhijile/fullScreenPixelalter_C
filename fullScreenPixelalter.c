@@ -7,7 +7,12 @@ int height;
 int scaledWidth;
 int scaledHeight;
 
+BOOL fDraw = FALSE;
+POINT ptPrevious;
+
 HWND window = NULL;
+HWND upper = NULL;
+HDC upperDC;
 HDC screen, capture;
 HDC mainWin;
 HBITMAP bits;
@@ -35,6 +40,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
         case 0x34:
             mode = 4;
             break;
+
         case VK_UP:
             pixelSize++;
             scaledWidth = width / pixelSize;
@@ -50,8 +56,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
             }
             break;
         }
-        break;
-        break;
+
     default:
         return CallNextHookEx(NULL, nCode, wParam, lParam);
         break;
@@ -67,6 +72,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
     case WM_PAINT:
     {
+
+        bits = CreateCompatibleBitmap(screen, width, height);
+        SelectObject(capture, bits);
 
         switch (mode)
         {
@@ -85,9 +93,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             break;
         }
 
-        bits = CreateCompatibleBitmap(screen, width, height);
-        SelectObject(capture, bits);
-        StretchBlt(capture, 0, 0, scaledWidth, scaledHeight, screen, 0, 0, width, height, SRCCOPY);
+        // flipped colros
+        //  StretchBlt(capture, 0, 0, scaledWidth, scaledHeight, screen, 0, 0, width, height, NOTSRCCOPY);
+        //  StretchBlt(mainWin, 0, 0, width, height, capture, 0, 0, scaledWidth, scaledHeight, SRCCOPY);
+
+        StretchBlt(capture, 0, 0, scaledWidth, scaledHeight, screen, 0, 0, width, height, MERGECOPY);
         StretchBlt(mainWin, 0, 0, width, height, capture, 0, 0, scaledWidth, scaledHeight, SRCCOPY);
         DeleteObject(bits);
 
@@ -156,6 +166,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         TranslateMessage(&msg);
         DispatchMessage(&msg);
+        InvalidateRect(window, NULL, FALSE);
+        UpdateWindow(window);
     }
 
     return msg.wParam;
