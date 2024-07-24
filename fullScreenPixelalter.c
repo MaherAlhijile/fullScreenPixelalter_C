@@ -1,7 +1,7 @@
 #include <windows.h>
 
 int pixelSize = 5;
-int mode = 2;
+int mode = 1;
 int width = 1920;
 int height = 1080;
 int scaledWidth;
@@ -106,6 +106,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     HHOOK test1 = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, 0);
+    width = GetSystemMetrics(SM_CXSCREEN);
+    height =  GetSystemMetrics(SM_CYSCREEN);
     scaledWidth = width / pixelSize;
     scaledHeight = height / pixelSize;
     screen = GetDC(NULL);
