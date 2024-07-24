@@ -1,12 +1,16 @@
 #include <windows.h>
 
-int pixelSize = 1;
-int mode = 1;
+int pixelSize = 5;
+int mode = 2;
+int width = 1920;
+int height = 1080;
+int scaledWidth;
+int scaledHeight;
 
 HWND window = NULL;
 HDC screen, capture;
+HDC mainWin;
 HBITMAP bits;
-
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -15,15 +19,71 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_PAINT:
     {
 
-        capture = CreateCompatibleDC(screen);
-        bits = CreateCompatibleBitmap(screen, 1920, 1080);
-        SelectObject(capture, bits);
+        switch (mode)
+        {
+        case 1:
+            SetStretchBltMode(capture, BLACKONWHITE);
+            break;
+        case 2:
+            SetStretchBltMode(capture, COLORONCOLOR);
+            break;
+        case 3:
+            SetStretchBltMode(capture, HALFTONE);
+            break;
+        case 4:
+            SetStretchBltMode(capture, WHITEONBLACK);
 
-        StretchBlt(capture, 0, 0, 1920 / pixelSize, 1080 / pixelSize, screen, 0, 0, 1920, 1080, SRCCOPY);
-        StretchBlt(GetDC(window), 0, 0, 1920, 1080, capture, 0, 0, 1920 / pixelSize, 1080 / pixelSize, SRCCOPY);
-        
-        DeleteDC(capture);
+            break;
+        }
+
+        bits = CreateCompatibleBitmap(screen, width, height);
+        SelectObject(capture, bits);
+        StretchBlt(capture, 0, 0, scaledWidth, scaledHeight, screen, 0, 0, width, height, SRCCOPY);
+        StretchBlt(mainWin, 0, 0, width, height, capture, 0, 0, scaledWidth, scaledHeight, SRCCOPY);
         DeleteObject(bits);
+
+        return 0;
+    }
+
+    case WM_KEYDOWN:
+    {
+        switch (wParam)
+        {
+        case VK_UP:
+            pixelSize++;
+            scaledWidth = width / pixelSize;
+            scaledHeight = height / pixelSize;
+
+            break;
+
+        case VK_DOWN:
+            if (pixelSize > 1)
+            {
+                pixelSize--;
+                scaledWidth = width / pixelSize;
+                scaledHeight = height / pixelSize;
+            }
+            break;
+
+        case 0x31:
+            mode = 1;
+            break;
+
+        case 0x32:
+            mode = 2;
+            break;
+
+        case 0x33:
+            mode = 3;
+            break;
+
+        case 0x34:
+            mode = 4;
+            break;
+
+        default:
+            break;
+        }
 
         return 0;
     }
@@ -39,6 +99,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+
+    scaledWidth = width / pixelSize;
+    scaledHeight = height / pixelSize;
+    screen = GetDC(NULL);
+    capture = CreateCompatibleDC(screen);
+
     WNDCLASS wc = {0};
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = hInstance;
@@ -68,7 +134,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wl = wl | WS_EX_LAYERED | WS_EX_TRANSPARENT;
     SetWindowLong(window, GWL_EXSTYLE, wl);
     SetWindowDisplayAffinity(window, WDA_EXCLUDEFROMCAPTURE);
-    screen = GetDC(NULL);
+    mainWin = GetDC(window);
 
     if (window == NULL)
     {
