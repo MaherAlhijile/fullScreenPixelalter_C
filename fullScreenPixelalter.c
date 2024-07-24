@@ -1,20 +1,12 @@
 #include <windows.h>
 
-int pixelSize = 5;
+int pixelSize = 1;
 int mode = 1;
-
 
 HWND window = NULL;
 HDC screen, capture;
 HBITMAP bits;
 
-void setTransparent()
-{
-    SetWindowPos(window, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-    long wl = GetWindowLong(window, GWL_EXSTYLE);
-    wl = wl | WS_EX_LAYERED | WS_EX_TRANSPARENT;
-    SetWindowLong(window, GWL_EXSTYLE, wl);
-}
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -23,21 +15,21 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_PAINT:
     {
 
-        screen = GetDC(NULL);
         capture = CreateCompatibleDC(screen);
         bits = CreateCompatibleBitmap(screen, 1920, 1080);
         SelectObject(capture, bits);
-        SetWindowDisplayAffinity(window, WDA_EXCLUDEFROMCAPTURE);
-        BitBlt(capture, 0, 0, 1920, 1080, screen, 0, 0, SRCCOPY);
-        StretchBlt(capture, 0, 0, 1920 / pixelSize, 1080 / pixelSize, capture, 0, 0, 1920, 1080, SRCCOPY);
+
+        StretchBlt(capture, 0, 0, 1920 / pixelSize, 1080 / pixelSize, screen, 0, 0, 1920, 1080, SRCCOPY);
         StretchBlt(GetDC(window), 0, 0, 1920, 1080, capture, 0, 0, 1920 / pixelSize, 1080 / pixelSize, SRCCOPY);
-        DeleteObject(bits);
+        
         DeleteDC(capture);
-        ReleaseDC(NULL, screen);
+        DeleteObject(bits);
+
         return 0;
     }
 
     case WM_DESTROY:
+        ReleaseDC(window, screen);
         PostQuitMessage(0);
         return 0;
     default:
@@ -70,7 +62,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         NULL,
         hInstance,
         NULL);
-    setTransparent();
+
+    SetWindowPos(window, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    long wl = GetWindowLong(window, GWL_EXSTYLE);
+    wl = wl | WS_EX_LAYERED | WS_EX_TRANSPARENT;
+    SetWindowLong(window, GWL_EXSTYLE, wl);
+    SetWindowDisplayAffinity(window, WDA_EXCLUDEFROMCAPTURE);
+    screen = GetDC(NULL);
 
     if (window == NULL)
     {
