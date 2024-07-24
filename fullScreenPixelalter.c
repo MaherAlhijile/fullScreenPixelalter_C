@@ -1,10 +1,15 @@
 #include <windows.h>
+#include <stdlib.h>
+
+int pixelSize = 5;
+int mode = 1;
+
 
 HWND window = NULL;
 HDC screen, capture;
+screen = NULL;
+capture = NULL;
 HBITMAP bits;
-int pixelSize = 5;
-int mode = 1;
 
 void setTransparent()
 {
