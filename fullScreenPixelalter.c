@@ -1,8 +1,9 @@
 #include <windows.h>
 #include <stdio.h>
+#include <time.h>
 
-int pixelSize = 5;
-int mode = 1;
+int pixelSize = 3;
+int mode = 2;
 int width;
 int height;
 int scaledWidth;
@@ -17,6 +18,9 @@ HDC upperDC;
 HDC screen, capture;
 HDC mainWin;
 HBITMAP bits;
+
+clock_t start, end;
+double cpu_time_used;
 
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
@@ -44,7 +48,9 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
             case 0x34:
                 mode = 4;
                 break;
-
+            case VK_ESCAPE:
+                PostQuitMessage(0);
+                break;
             case VK_UP:
                 pixelSize++;
                 scaledWidth = width / pixelSize;
@@ -122,10 +128,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             break;
         }
 
-        // flipped colros
-        //  StretchBlt(capture, 0, 0, scaledWidth, scaledHeight, screen, 0, 0, width, height, NOTSRCCOPY);
-        //  StretchBlt(mainWin, 0, 0, width, height, capture, 0, 0, scaledWidth, scaledHeight, SRCCOPY);
-
         StretchBlt(capture, 0, 0, scaledWidth, scaledHeight, screen, 0, 0, width, height, SRCCOPY);
         StretchBlt(mainWin, 0, 0, width, height, capture, 0, 0, scaledWidth, scaledHeight, SRCCOPY);
         DeleteObject(bits);
@@ -176,15 +178,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         hInstance,
         NULL);
 
-    SetTimer(window, // handle to main window
-             0,      // timer identifier
-             10,     // 10-second interval
-             NULL);
     SetWindowPos(window, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
     long wl = GetWindowLong(window, GWL_EXSTYLE);
     wl = wl | WS_EX_LAYERED | WS_EX_TRANSPARENT;
     SetWindowLong(window, GWL_EXSTYLE, wl);
-    // SetWindowDisplayAffinity(window, WDA_EXCLUDEFROMCAPTURE);
+    SetWindowDisplayAffinity(window, WDA_EXCLUDEFROMCAPTURE);
     mainWin = GetDC(window);
 
     if (window == NULL)
@@ -192,12 +190,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         MessageBox(NULL, "Window Creation Failed!", "Error", MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
+    SetTimer(window, 0, 1, NULL);
+    SetTimer(window, 1, 1000, NULL);
 
-    SetTimer(window, // handle to main window
-             1,      // timer identifier
-             30,     // 10-second interval
-             NULL);
-    
     MSG msg;
 
     while (GetMessage(&msg, NULL, 0, 0))
