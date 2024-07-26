@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <stdio.h>
 
 int pixelSize = 5;
 int mode = 1;
@@ -25,41 +26,46 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
     switch (wParam)
     {
     case WM_KEYDOWN:
+
         // Check for specific keys
-        switch (pKeyBoard->vkCode)
+        if (GetAsyncKeyState(VK_CONTROL) & 0x8000)
         {
-        case 0x31:
-            mode = 1;
-            break;
-        case 0x32:
-            mode = 2;
-            break;
-        case 0x33:
-            mode = 3;
-            break;
-        case 0x34:
-            mode = 4;
-            break;
-
-        case VK_UP:
-            pixelSize++;
-            scaledWidth = width / pixelSize;
-            scaledHeight = height / pixelSize;
-
-            break;
-        case VK_DOWN:
-            if (pixelSize > 1)
+            switch (pKeyBoard->vkCode)
             {
-                pixelSize--;
+            case 0x31:
+                mode = 1;
+                break;
+            case 0x32:
+                mode = 2;
+                break;
+            case 0x33:
+                mode = 3;
+                break;
+            case 0x34:
+                mode = 4;
+                break;
+
+            case VK_UP:
+                pixelSize++;
                 scaledWidth = width / pixelSize;
                 scaledHeight = height / pixelSize;
+
+                break;
+            case VK_DOWN:
+                if (pixelSize > 1)
+                {
+                    pixelSize--;
+                    scaledWidth = width / pixelSize;
+                    scaledHeight = height / pixelSize;
+                }
+                break;
             }
+
+        default:
+            return CallNextHookEx(NULL, nCode, wParam, lParam);
             break;
         }
-
-    default:
-        return CallNextHookEx(NULL, nCode, wParam, lParam);
-        break;
+        return 0;
     }
 
     // according to winapi all functions which implement a hook must return by calling next hook
@@ -70,10 +76,33 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
     {
+
+    case WM_CREATE:
+
+        return 0;
+    case WM_TIMER:
+        switch (wParam)
+        {
+        case 0:
+
+            width -= 10;
+
+            break;
+        case 1:
+            height -= 10;
+            break;
+        default:
+
+            break;
+        }
+        return 0;
+
     case WM_PAINT:
     {
-
+        // PAINTSTRUCT ps;
+        // mainWin = BeginPaint(window, &ps);
         bits = CreateCompatibleBitmap(screen, width, height);
+
         SelectObject(capture, bits);
 
         switch (mode)
@@ -97,7 +126,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         //  StretchBlt(capture, 0, 0, scaledWidth, scaledHeight, screen, 0, 0, width, height, NOTSRCCOPY);
         //  StretchBlt(mainWin, 0, 0, width, height, capture, 0, 0, scaledWidth, scaledHeight, SRCCOPY);
 
-        StretchBlt(capture, 0, 0, scaledWidth, scaledHeight, screen, 0, 0, width, height, MERGECOPY);
+        StretchBlt(capture, 0, 0, scaledWidth, scaledHeight, screen, 0, 0, width, height, SRCCOPY);
         StretchBlt(mainWin, 0, 0, width, height, capture, 0, 0, scaledWidth, scaledHeight, SRCCOPY);
         DeleteObject(bits);
 
@@ -136,7 +165,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     window = CreateWindowEx(
 
-        WS_EX_TRANSPARENT,
+        WS_EX_TOOLWINDOW,
 
         "SimpleWindowClass",
         "Simple Window",
@@ -147,11 +176,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         hInstance,
         NULL);
 
+    SetTimer(window, // handle to main window
+             0,      // timer identifier
+             10,     // 10-second interval
+             NULL);
     SetWindowPos(window, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
     long wl = GetWindowLong(window, GWL_EXSTYLE);
     wl = wl | WS_EX_LAYERED | WS_EX_TRANSPARENT;
     SetWindowLong(window, GWL_EXSTYLE, wl);
-    SetWindowDisplayAffinity(window, WDA_EXCLUDEFROMCAPTURE);
+    // SetWindowDisplayAffinity(window, WDA_EXCLUDEFROMCAPTURE);
     mainWin = GetDC(window);
 
     if (window == NULL)
@@ -160,14 +193,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 0;
     }
 
+    SetTimer(window, // handle to main window
+             1,      // timer identifier
+             30,     // 10-second interval
+             NULL);
+    
     MSG msg;
+
     while (GetMessage(&msg, NULL, 0, 0))
     {
 
         TranslateMessage(&msg);
         DispatchMessage(&msg);
-        InvalidateRect(window, NULL, FALSE);
-        UpdateWindow(window);
     }
 
     return msg.wParam;
